@@ -69,6 +69,32 @@ public class OrderDAO implements Dao<Order> {
 		return new ArrayList<>();
 	}
 
+	public Double calculateOrder(Long id) {
+		try (Connection connection = DBUtils.getInstance().getConnection();
+				PreparedStatement itemsOrderedStatement = connection
+						.prepareStatement("SELECT * FROM items_ordered WHERE order_id = ?;");) {
+			itemsOrderedStatement.setLong(1, id);
+			ResultSet itemsOrderedResultSet = itemsOrderedStatement.executeQuery();
+			Double totalValue = 0d;
+			while (itemsOrderedResultSet.next()) {
+				try (PreparedStatement itemsStatement = connection.prepareStatement("SELECT * FROM items WHERE id = ?");) {
+					itemsStatement.setLong(1, itemsOrderedResultSet.getLong("item_id"));
+					ResultSet itemsResultSet = itemsStatement.executeQuery();
+					itemsResultSet.next();
+					totalValue += itemsResultSet.getDouble("value");
+				} catch (SQLException e) {
+					LOGGER.debug(e);
+					LOGGER.error(e.getMessage());
+				}
+			}
+			return totalValue;
+		} catch (Exception e) {
+			LOGGER.debug(e);
+			LOGGER.error(e.getMessage());
+		}
+		return 0d;
+	}
+
 	public Order readLatest() {
 		try (Connection connection = DBUtils.getInstance().getConnection();
 				Statement statement = connection.createStatement();
