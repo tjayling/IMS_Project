@@ -52,8 +52,8 @@ public class OrderController implements CrudController<Order> {
 		do {
 			LOGGER.info("Please enter an item id");
 			item_ids.add(utils.getLong());
-		} while (item_ids.get(item_ids.size()-1) != 0);
-		item_ids.remove(item_ids.size()-1);
+		} while (item_ids.get(item_ids.size() - 1) != 0);
+		item_ids.remove(item_ids.size() - 1);
 		Order order = orderDAO.create(new Order(customer_id, item_ids));
 		LOGGER.info("Order created");
 		return order;
@@ -68,11 +68,31 @@ public class OrderController implements CrudController<Order> {
 		Long id = utils.getLong();
 		LOGGER.info("Please enter a customer id");
 		Long customer_id = utils.getLong();
-		LOGGER.info("Please enter the id of the item you would like to add to your order. Enter 0 for no item");
-		Long item_id = utils.getLong();
-		Order order = orderDAO.update(new Order(id, customer_id, item_id));
-		LOGGER.info("Order updated");
-		return order;
+		LOGGER.info(
+				"Would you like to\nADD: add an item to an existing order\nDELETE: delete an item from an existing order");
+		String addOrRemove = utils.getString();
+		while (!addOrRemove.equalsIgnoreCase("add") && !addOrRemove.equalsIgnoreCase("delete")) {
+			LOGGER.info("Invalid selection please try again");
+			addOrRemove = utils.getString();
+		}
+		
+		Boolean AOR = addOrRemove.equalsIgnoreCase("add") ? true : false;
+		Order order = null;
+		if (AOR) {
+			LOGGER.info("Please enter the id of the item you would like to add to your order");
+			Long item_id = utils.getLong();
+			order = orderDAO.update(new Order(id, customer_id, item_id));
+			LOGGER.info("Order updated");
+		} else if (!AOR) {
+			LOGGER.info("Please enter the id of the item you would like to delete from your order");
+			Long item_id = utils.getLong();
+			order = orderDAO.removeItem(new Order(id, customer_id, item_id));
+			LOGGER.info("Order updated");
+		}
+	
+
+	return order;
+
 	}
 
 	/**

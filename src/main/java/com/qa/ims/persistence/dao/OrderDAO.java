@@ -73,7 +73,6 @@ public class OrderDAO implements Dao<Order> {
 		try (Connection connection = DBUtils.getInstance().getConnection();
 				Statement statement = connection.createStatement();
 				ResultSet ordersResultSet = statement.executeQuery("SELECT * FROM orders ORDER BY id DESC LIMIT 1;");
-				// TODO
 				PreparedStatement itemsOrderedStatement = connection
 						.prepareStatement("SELECT * FROM items_ordered WHERE order_id = ?");) {
 			ordersResultSet.next();
@@ -184,6 +183,29 @@ public class OrderDAO implements Dao<Order> {
 		return null;
 	}
 
+	public Order removeItem(Order order) {
+		try (Connection connection = DBUtils.getInstance().getConnection();
+				PreparedStatement ordersStatement = connection
+						.prepareStatement("UPDATE orders SET id = ?, customer_id = ? WHERE id = ?;");
+				PreparedStatement itemsOrderedStatement = connection
+						.prepareStatement("DELETE FROM items_ordered WHERE order_id = ? AND item_id = ? LIMIT 1");) {
+			ordersStatement.setLong(1, order.getId());
+			ordersStatement.setLong(2, order.getCustomerId());
+			ordersStatement.setLong(3, order.getId());
+			ordersStatement.executeUpdate();
+
+			itemsOrderedStatement.setLong(1, order.getId());
+			itemsOrderedStatement.setLong(2, order.getItemIds().get(0));
+			itemsOrderedStatement.executeUpdate();
+
+			return read(order.getId());
+		} catch (Exception e) {
+			LOGGER.debug(e);
+			LOGGER.error(e.getMessage());
+		}
+		return null;
+	}
+
 	/**
 	 * Deletes a customer in the database
 	 * 
@@ -192,8 +214,7 @@ public class OrderDAO implements Dao<Order> {
 	@Override
 	public int delete(long id) {
 		try (Connection connection = DBUtils.getInstance().getConnection();
-				PreparedStatement ordersStatement = connection
-						.prepareStatement("DELETE FROM orders WHERE id = ?");
+				PreparedStatement ordersStatement = connection.prepareStatement("DELETE FROM orders WHERE id = ?");
 				PreparedStatement itemsOrderedStatement = connection
 						.prepareStatement("DELETE FROM items_ordered WHERE order_id = ?");) {
 
