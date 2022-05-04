@@ -58,7 +58,7 @@ public class ItemController implements CrudController<Item> {
 		Double value = utils.getDouble();
 		Item item = itemDAO.update(new Item(id, name, value));
 		LOGGER.info("Item updated");
-		return null;
+		return item;
 	}
 
 	@Override
