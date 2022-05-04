@@ -21,7 +21,7 @@ public class OrderDAO implements Dao<Order> {
 	public List<Long> modelItemsFromResultSet(ResultSet resultSet, Long id) throws SQLException {
 		List<Long> item_ids = new ArrayList<>();
 		while (resultSet.next()) {
-			if (id == resultSet.getLong("id")) {
+			if (id == resultSet.getLong("order_id")) {
 				item_ids.add(resultSet.getLong("item_id"));
 			}
 		}
@@ -43,13 +43,23 @@ public class OrderDAO implements Dao<Order> {
 	@Override
 	public List<Order> readAll() {
 		try (Connection connection = DBUtils.getInstance().getConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT * FROM orders;");
-				ResultSet itemsOrderedResultSet = statement.executeQuery("SELECT * FROM items_ordered;");) {
+				Statement ordersStatement = connection.createStatement();
+				ResultSet ordersResultSet = ordersStatement.executeQuery("SELECT * FROM orders;");) {
 			List<Order> orders = new ArrayList<>();
-			itemsOrderedResultSet.next();
-			while (resultSet.next()) {
-				orders.add(modelFromResultSet(resultSet, itemsOrderedResultSet));
+
+			while (ordersResultSet.next()) {
+				try (Statement itemsOrderedStatement = connection.createStatement();
+						ResultSet itemsOrderedResultSet = itemsOrderedStatement
+								.executeQuery("SELECT * FROM items_ordered;");) {
+
+					itemsOrderedResultSet.next();
+					orders.add(modelFromResultSet(ordersResultSet, itemsOrderedResultSet));
+					itemsOrderedResultSet.close();
+
+				} catch (SQLException e) {
+					LOGGER.debug(e);
+					LOGGER.error(e.getMessage());
+				}
 			}
 			return orders;
 		} catch (SQLException e) {
@@ -62,14 +72,15 @@ public class OrderDAO implements Dao<Order> {
 	public Order readLatest() {
 		try (Connection connection = DBUtils.getInstance().getConnection();
 				Statement statement = connection.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT * FROM orders ORDER BY id DESC LIMIT 1;");
+				ResultSet ordersResultSet = statement.executeQuery("SELECT * FROM orders ORDER BY id DESC LIMIT 1;");
+				// TODO
 				PreparedStatement itemsOrderedStatement = connection
 						.prepareStatement("SELECT * FROM items_ordered WHERE order_id = ?");) {
-			resultSet.next();
-			itemsOrderedStatement.setLong(1, resultSet.getLong("order_id"));
+			ordersResultSet.next();
+			itemsOrderedStatement.setLong(1, ordersResultSet.getLong("id"));
 			ResultSet itemsOrderedResultSet = itemsOrderedStatement.executeQuery();
 			itemsOrderedResultSet.next();
-			return modelFromResultSet(resultSet, itemsOrderedResultSet);
+			return modelFromResultSet(ordersResultSet, itemsOrderedResultSet);
 		} catch (Exception e) {
 			LOGGER.debug(e);
 			LOGGER.error(e.getMessage());
@@ -88,13 +99,21 @@ public class OrderDAO implements Dao<Order> {
 				PreparedStatement ordersStatement = connection
 						.prepareStatement("INSERT INTO orders(customer_id) VALUES (?);");
 				PreparedStatement itemsOrderedStatement = connection
-						.prepareStatement("INSERT INTO items_ordered(order_id, item_id) VALUES (?, ?);");) {
+						.prepareStatement("INSERT INTO items_ordered(order_id, item_id) VALUES (?, ?);");
+				PreparedStatement idStatement = connection
+						.prepareStatement("SELECT id FROM orders ORDER BY id DESC LIMIT 1;");) {
+
 			ordersStatement.setLong(1, order.getCustomerId());
 			ordersStatement.executeUpdate();
 
+			ResultSet idResult = idStatement.executeQuery();
+			idResult.next();
+			Long order_id = idResult.getLong("id");
+
 			int count = 0;
+
 			for (Long item_id : order.getItemIds()) {
-				itemsOrderedStatement.setLong(1, order.getId());
+				itemsOrderedStatement.setLong(1, order_id);
 				itemsOrderedStatement.setLong(2, item_id);
 				itemsOrderedStatement.addBatch();
 				count++;
@@ -105,6 +124,7 @@ public class OrderDAO implements Dao<Order> {
 			}
 			return readLatest();
 		} catch (Exception e) {
+//			LOGGER.
 			LOGGER.debug(e);
 			LOGGER.error(e.getMessage());
 		}
@@ -172,9 +192,15 @@ public class OrderDAO implements Dao<Order> {
 	@Override
 	public int delete(long id) {
 		try (Connection connection = DBUtils.getInstance().getConnection();
-				PreparedStatement statement = connection.prepareStatement("DELETE FROM customers WHERE id = ?");) {
-			statement.setLong(1, id);
-			return statement.executeUpdate();
+				PreparedStatement ordersStatement = connection
+						.prepareStatement("DELETE FROM orders WHERE id = ?");
+				PreparedStatement itemsOrderedStatement = connection
+						.prepareStatement("DELETE FROM items_ordered WHERE order_id = ?");) {
+
+			itemsOrderedStatement.setLong(1, id);
+			ordersStatement.setLong(1, id);
+			itemsOrderedStatement.executeUpdate();
+			return ordersStatement.executeUpdate();
 		} catch (Exception e) {
 			LOGGER.debug(e);
 			LOGGER.error(e.getMessage());

@@ -53,6 +53,7 @@ public class OrderController implements CrudController<Order> {
 			LOGGER.info("Please enter an item id");
 			item_ids.add(utils.getLong());
 		} while (item_ids.get(item_ids.size()-1) != 0);
+		item_ids.remove(item_ids.size()-1);
 		Order order = orderDAO.create(new Order(customer_id, item_ids));
 		LOGGER.info("Order created");
 		return order;
@@ -75,7 +76,7 @@ public class OrderController implements CrudController<Order> {
 	}
 
 	/**
-	 * Deletes an existing customer by the id of the customer
+	 * Deletes an existing order by the id of the order
 	 * 
 	 * @return
 	 */
