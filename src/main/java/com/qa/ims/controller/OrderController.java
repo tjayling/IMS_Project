@@ -7,7 +7,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.qa.ims.persistence.dao.OrderDAO;
-import com.qa.ims.persistence.domain.Customer;
 import com.qa.ims.persistence.domain.Order;
 import com.qa.ims.utils.Utils;
 
@@ -33,11 +32,32 @@ public class OrderController implements CrudController<Order> {
 	 */
 	@Override
 	public List<Order> readAll() {
-		List<Order> orders = orderDAO.readAll();
-		for (Order order : orders) {
-			LOGGER.info(order);
+		LOGGER.info(
+				"Would you like to\nREAD: Read all orders in the system\nCALCULATE: Calculate the total price of an order in the system");
+		String readOrCalc = utils.getString();
+
+		while (!readOrCalc.equalsIgnoreCase("read") && !readOrCalc.equalsIgnoreCase("calculate")) {
+			LOGGER.info("Invalid selection please try again");
+			readOrCalc = utils.getString();
 		}
-		return orders;
+
+		Boolean ROC = readOrCalc.equalsIgnoreCase("read") ? true : false;
+		if (ROC) {
+			List<Order> orders = orderDAO.readAll();
+			for (Order order : orders) {
+				LOGGER.info(order);
+			}
+			return orders;
+		} else if (!ROC) {
+			calculateOrder();
+		}
+		return null;
+	}
+
+	public void calculateOrder() {
+		LOGGER.info("Enter the id of the order you would like to calculate");
+		Long id = utils.getLong();
+		LOGGER.info(String.format("The total value of order %s is £%s", id, orderDAO.calculateOrder(id)));
 	}
 
 	/**
@@ -75,7 +95,7 @@ public class OrderController implements CrudController<Order> {
 			LOGGER.info("Invalid selection please try again");
 			addOrRemove = utils.getString();
 		}
-		
+
 		Boolean AOR = addOrRemove.equalsIgnoreCase("add") ? true : false;
 		Order order = null;
 		if (AOR) {
@@ -89,9 +109,8 @@ public class OrderController implements CrudController<Order> {
 			order = orderDAO.removeItem(new Order(id, customer_id, item_id));
 			LOGGER.info("Order updated");
 		}
-	
 
-	return order;
+		return order;
 
 	}
 
