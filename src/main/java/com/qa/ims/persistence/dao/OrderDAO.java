@@ -51,8 +51,6 @@ public class OrderDAO implements Dao<Order> {
 				try (Statement itemsOrderedStatement = connection.createStatement();
 						ResultSet itemsOrderedResultSet = itemsOrderedStatement
 								.executeQuery("SELECT * FROM items_ordered;");) {
-
-					itemsOrderedResultSet.next();
 					orders.add(modelFromResultSet(ordersResultSet, itemsOrderedResultSet));
 					itemsOrderedResultSet.close();
 
@@ -104,7 +102,6 @@ public class OrderDAO implements Dao<Order> {
 			ordersResultSet.next();
 			itemsOrderedStatement.setLong(1, ordersResultSet.getLong("id"));
 			ResultSet itemsOrderedResultSet = itemsOrderedStatement.executeQuery();
-			itemsOrderedResultSet.next();
 			return modelFromResultSet(ordersResultSet, itemsOrderedResultSet);
 		} catch (Exception e) {
 			LOGGER.debug(e);
@@ -168,7 +165,6 @@ public class OrderDAO implements Dao<Order> {
 			try (ResultSet resultSet = ordersStatement.executeQuery();
 					ResultSet itemsOrderedResultSet = itemsOrderedStatement.executeQuery()) {
 				resultSet.next();
-				itemsOrderedResultSet.next();
 				return modelFromResultSet(resultSet, itemsOrderedResultSet);
 			}
 		} catch (Exception e) {
