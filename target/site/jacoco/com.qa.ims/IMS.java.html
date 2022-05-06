@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IMS.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ims</a> &gt; <a href="index.source.html" class="el_package">com.qa.ims</a> &gt; <span class="el_source">IMS.java</span></div><h1>IMS.java</h1><pre class="source lang-java linenums">package com.qa.ims;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.qa.ims.controller.Action;
+import com.qa.ims.controller.CrudController;
+import com.qa.ims.controller.CustomerController;
+import com.qa.ims.controller.ItemController;
+import com.qa.ims.controller.OrderController;
+import com.qa.ims.persistence.dao.CustomerDAO;
+import com.qa.ims.persistence.dao.ItemDAO;
+import com.qa.ims.persistence.dao.OrderDAO;
+import com.qa.ims.persistence.domain.Domain;
+import com.qa.ims.utils.DBUtils;
+import com.qa.ims.utils.Utils;
+
+public class IMS {
+
+<span class="nc" id="L20">	public static final Logger LOGGER = LogManager.getLogger();</span>
+
+	private final CustomerController customers;
+	private final ItemController items;
+	private final OrderController orders;
+	private final Utils utils;
+
+<span class="nc" id="L27">	public IMS() {</span>
+<span class="nc" id="L28">		this.utils = new Utils();</span>
+<span class="nc" id="L29">		final CustomerDAO custDAO = new CustomerDAO();</span>
+<span class="nc" id="L30">		this.customers = new CustomerController(custDAO, utils);</span>
+<span class="nc" id="L31">		final ItemDAO itemDAO = new ItemDAO();</span>
+<span class="nc" id="L32">		this.items = new ItemController(itemDAO, utils);</span>
+<span class="nc" id="L33">		final OrderDAO orderDAO = new OrderDAO();</span>
+<span class="nc" id="L34">		this.orders = new OrderController(orderDAO, utils);</span>
+<span class="nc" id="L35">	}</span>
+
+	public void imsSystem() {
+<span class="nc" id="L38">		LOGGER.info(&quot;Welcome to the Inventory Management System!&quot;);</span>
+<span class="nc" id="L39">		DBUtils.connect();</span>
+
+<span class="nc" id="L41">		Domain domain = null;</span>
+		do {
+<span class="nc" id="L43">			LOGGER.info(&quot;Which entity would you like to use?&quot;);</span>
+<span class="nc" id="L44">			Domain.printDomains();</span>
+
+<span class="nc" id="L46">			domain = Domain.getDomain(utils);</span>
+
+<span class="nc" id="L48">			domainAction(domain);</span>
+
+<span class="nc bnc" id="L50" title="All 2 branches missed.">		} while (domain != Domain.STOP);</span>
+<span class="nc" id="L51">	}</span>
+
+	private void domainAction(Domain domain) {
+<span class="nc" id="L54">		boolean changeDomain = false;</span>
+		do {
+
+<span class="nc" id="L57">			CrudController&lt;?&gt; active = null;</span>
+<span class="nc bnc" id="L58" title="All 5 branches missed.">			switch (domain) {</span>
+			case CUSTOMER:
+<span class="nc" id="L60">				active = this.customers;</span>
+<span class="nc" id="L61">				break;</span>
+			case ITEM:
+<span class="nc" id="L63">				active = this.items;</span>
+<span class="nc" id="L64">				break;</span>
+			case ORDER:
+<span class="nc" id="L66">				active = this.orders;</span>
+<span class="nc" id="L67">				break;</span>
+			case STOP:
+<span class="nc" id="L69">				return;</span>
+			default:
+				break;
+			}
+
+<span class="nc" id="L74">			LOGGER.info(() -&gt; &quot;\nWhat would you like to do with &quot; + domain.name().toLowerCase() + &quot;:&quot;);</span>
+
+<span class="nc" id="L76">			Action.printActions();</span>
+<span class="nc" id="L77">			Action action = Action.getAction(utils);</span>
+
+<span class="nc bnc" id="L79" title="All 2 branches missed.">			if (action == Action.RETURN) {</span>
+<span class="nc" id="L80">				changeDomain = true;</span>
+			} else {
+<span class="nc" id="L82">				doAction(active, action);</span>
+			}
+<span class="nc bnc" id="L84" title="All 2 branches missed.">		} while (!changeDomain);</span>
+<span class="nc" id="L85">	}</span>
+
+	public void doAction(CrudController&lt;?&gt; crudController, Action action) {
+<span class="nc bnc" id="L88" title="All 6 branches missed.">		switch (action) {</span>
+		case CREATE:
+<span class="nc" id="L90">			crudController.create();</span>
+<span class="nc" id="L91">			break;</span>
+		case READ:
+<span class="nc" id="L93">			crudController.readAll();</span>
+<span class="nc" id="L94">			break;</span>
+		case UPDATE:
+<span class="nc" id="L96">			crudController.update();</span>
+<span class="nc" id="L97">			break;</span>
+		case DELETE:
+<span class="nc" id="L99">			crudController.delete();</span>
+<span class="nc" id="L100">			break;</span>
+		case RETURN:
+<span class="nc" id="L102">			break;</span>
+		default:
+			break;
+		}
+<span class="nc" id="L106">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>
